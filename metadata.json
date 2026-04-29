@@ -1,0 +1,6 @@
+{
+  "name": "PDF Text Editor",
+  "description": "Interactive PDF editor that allows editing text in-place while maintaining typography and layout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

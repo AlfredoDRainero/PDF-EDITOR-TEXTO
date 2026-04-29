@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Libre Baskerville", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-paper: #F8F7F4;
+  --color-canvas: #EFECE8;
+}
+
+@layer base {
+  body {
+    @apply bg-paper text-neutral-900 font-sans antialiased;
+  }
+}
+
+.serif {
+  font-family: var(--font-serif);
+}
+
+.pdf-container {
+  @apply relative mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.1)] bg-white border border-neutral-200 rounded-sm overflow-hidden transition-shadow duration-300;
+}
+
+.sidebar {
+  @apply w-64 bg-white border-r border-neutral-200 h-full flex flex-col;
+}
+
+.inspector {
+  @apply w-64 bg-white border-l border-neutral-200 h-full flex flex-col;
+}
+
+.text-layer-item {
+  @apply absolute cursor-text leading-none select-text transition-all duration-100;
+  white-space: pre;
+  transform-origin: 0% 0%;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.text-layer-item:hover {
+  @apply bg-black/5 ring-1 ring-black/10 z-40;
+}
+
+.text-layer-item.is-edited {
+  @apply bg-white text-neutral-900 z-30;
+}
+
+.text-edit-input {
+  @apply absolute border-none p-0 m-0 bg-white shadow-xl ring-1 ring-neutral-300 outline-none z-50;
+  resize: none;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.label-caps {
+  @apply text-[10px] uppercase font-bold text-gray-400 tracking-[0.15em] mb-3 block;
+}
+
+.btn-editorial {
+  @apply px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-200 disabled:opacity-30;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-neutral-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-neutral-300 rounded-full border-4 border-neutral-100;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-neutral-400;
+}
