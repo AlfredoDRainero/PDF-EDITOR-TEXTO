@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+// @ts-ignore
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import {
@@ -553,8 +554,8 @@ export default function App() {
                 Esperando archivo...
               </div>
             ) : (
-              <PDFPage
-                key={`${file.name}-${currentPage}`}
+              <div key={`${file.name}-${currentPage}`}>
+                <PDFPage
                 pdfDoc={pdfDoc!}
                 pageNumber={currentPage}
                 edits={edits.filter(e => e.pageIndex === currentPage - 1)}
@@ -580,6 +581,7 @@ export default function App() {
                 onUpdateCustomMark={updateCustomMark}
                 onAddStroke={addStroke}
               />
+              </div>
             )}
           </div>
         </section>
@@ -728,6 +730,7 @@ function PDFPage({
           const context = canvas.getContext('2d');
           canvas.width  = vp.width;
           canvas.height = vp.height;
+          // @ts-ignore — pdfjs-dist RenderParameters type is outdated
           const task = page.render({ canvasContext: context!, viewport: vp });
           renderTaskRef.current = task;
           await task.promise;
