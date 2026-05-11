@@ -18,6 +18,8 @@ import {
   Pen,
   Highlighter,
   Printer,
+  Type,
+  Eraser,
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -43,6 +45,15 @@ const PEN_COLORS = [
   { name: 'Verde', value: '#006600' },
 ];
 
+const TEXT_COLORS = [
+  { name: 'Negro', value: '#000000' },
+  { name: 'Rojo',  value: '#CC0000' },
+  { name: 'Azul',  value: '#0000CC' },
+  { name: 'Verde', value: '#006600' },
+];
+
+const TEXT_FONT_SIZES = [8, 10, 12, 14, 16, 20, 24];
+
 interface TextMark {
   pageIndex: number;
   itemIndex: number;
@@ -64,6 +75,7 @@ interface CustomMark {
   x: number;       // PDF points
   y: number;       // PDF points (baseline)
   fontSize: number;
+  color?: string;  // hex color, default black
 }
 
 interface DrawingStroke {
@@ -76,7 +88,7 @@ interface DrawingStroke {
 }
 
 type ReportType = 'zeiss' | 'engranaje' | 'comun';
-type ActiveTool = 'select' | 'pen' | 'highlight';
+type ActiveTool = 'select' | 'pen' | 'highlight' | 'text' | 'eraser';
 
 const hexToRgb = (hex: string) => {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -102,6 +114,8 @@ export default function App() {
   const [activeTool, setActiveTool] = useState<ActiveTool>('select');
   const [penColor, setPenColor] = useState(PEN_COLORS[0].value);
   const [highlightColor, setHighlightColor] = useState(HIGHLIGHT_COLORS[0].value);
+  const [textColor, setTextColor] = useState(TEXT_COLORS[0].value);
+  const [textFontSize, setTextFontSize] = useState(12);
 
   const zeissInputRef  = useRef<HTMLInputElement>(null);
   const gearInputRef   = useRef<HTMLInputElement>(null);
@@ -323,9 +337,10 @@ export default function App() {
     }
 
     for (const mark of customMarks) {
+      const markColor = mark.color ? hexToRgb(mark.color) : rgb(0, 0, 0);
       const targetPages = mark.pageIndex === -1 ? pages : [pages[mark.pageIndex]];
       for (const p of targetPages) {
-        p.drawText(mark.text, { x: mark.x, y: mark.y, size: mark.fontSize, font, color: rgb(0, 0, 0) });
+        p.drawText(mark.text, { x: mark.x, y: mark.y, size: mark.fontSize, font, color: markColor });
       }
     }
 
@@ -358,6 +373,30 @@ export default function App() {
     setFile(null); setPdfDoc(null); setEdits([]); setCustomMarks([]);
     setStrokes([]); setCurrentPage(1); setActiveItemData(null);
     setActiveCustomMark(null); setReportType(null); setActiveTool('select');
+  };
+
+  const handleAddKSU = () => {
+    if (!file) return;
+    setCustomMarks(prev => [...prev, {
+      id: `ksu-${Date.now()}`,
+      pageIndex: -1,
+      text: 'Fecha del informe - Aseguramiento de la Calidad - CC : 8400 - KSU: 7.2 - Clasificacion : Interno',
+      x: CM_TO_PT * 2,
+      y: CM_TO_PT,
+      fontSize: 9,
+    }]);
+  };
+
+  const handleEraseItem = (pageIndex: number, itemIndex: number, item: any) => {
+    handleEdit(pageIndex, itemIndex, item, '');
+  };
+
+  const removeCustomMark = (id: string) => {
+    setCustomMarks(prev => prev.filter(m => m.id !== id));
+  };
+
+  const addTextMark = (mark: CustomMark) => {
+    setCustomMarks(prev => [...prev, mark]);
   };
 
   const modeLabel = reportType === 'engranaje' ? 'Engranaje' : reportType === 'zeiss' ? 'Zeiss' : 'PDF';
@@ -429,6 +468,24 @@ export default function App() {
           <Highlighter size={14} />
         </ToolBtn>
 
+        <ToolBtn
+          active={activeTool === 'text'}
+          onClick={() => setActiveTool('text')}
+          title="Escribir texto"
+          disabled={!file}
+        >
+          <Type size={14} />
+        </ToolBtn>
+
+        <ToolBtn
+          active={activeTool === 'eraser'}
+          onClick={() => setActiveTool('eraser')}
+          title="Borrador"
+          disabled={!file}
+        >
+          <Eraser size={14} />
+        </ToolBtn>
+
         {/* Pen color swatches */}
         {activeTool === 'pen' && (
           <div className="flex items-center gap-1 ml-3 border-l border-neutral-200 pl-3">
@@ -467,7 +524,47 @@ export default function App() {
           </div>
         )}
 
+        {/* Text tool options */}
+        {activeTool === 'text' && (
+          <div className="flex items-center gap-2 ml-3 border-l border-neutral-200 pl-3">
+            <span className="text-[9px] uppercase font-bold text-neutral-400">Color</span>
+            {TEXT_COLORS.map(c => (
+              <button
+                key={c.value}
+                title={c.name}
+                onClick={() => setTextColor(c.value)}
+                className={cn(
+                  'w-5 h-5 rounded-full border-2 transition-transform',
+                  textColor === c.value ? 'border-black scale-125' : 'border-transparent hover:scale-110',
+                )}
+                style={{ backgroundColor: c.value }}
+              />
+            ))}
+            <span className="text-[9px] uppercase font-bold text-neutral-400 ml-2">Tamaño</span>
+            {TEXT_FONT_SIZES.map(sz => (
+              <button
+                key={sz}
+                onClick={() => setTextFontSize(sz)}
+                className={cn(
+                  'px-1.5 py-0.5 text-[9px] font-bold rounded transition-all',
+                  textFontSize === sz ? 'bg-black text-white' : 'text-neutral-500 hover:bg-neutral-100',
+                )}
+              >
+                {sz}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="ml-auto flex items-center gap-1">
+          <button
+            onClick={handleAddKSU}
+            disabled={!file}
+            title="Agregar pie de página KSU en todas las hojas"
+            className="flex items-center gap-1.5 btn-editorial border border-neutral-300 rounded hover:bg-neutral-50 px-3 disabled:opacity-30 font-bold"
+          >
+            <span>KSU</span>
+          </button>
           <button
             onClick={handlePrint}
             disabled={!file}
@@ -545,6 +642,8 @@ export default function App() {
                 activeTool={activeTool}
                 penColor={penColor}
                 highlightColor={highlightColor}
+                textColor={textColor}
+                textFontSize={textFontSize}
                 pageIndex={currentPage - 1}
                 onSetActive={(itemIndex, item) => {
                   setActiveEdit({ page: currentPage - 1, item: itemIndex });
@@ -559,6 +658,9 @@ export default function App() {
                 }}
                 onUpdateCustomMark={updateCustomMark}
                 onAddStroke={addStroke}
+                onAddTextMark={addTextMark}
+                onEraseItem={(idx, item) => handleEraseItem(currentPage - 1, idx, item)}
+                onRemoveCustomMark={removeCustomMark}
               />
               </div>
             )}
@@ -657,21 +759,26 @@ interface PDFPageProps {
   activeTool: ActiveTool;
   penColor: string;
   highlightColor: string;
+  textColor: string;
+  textFontSize: number;
   onSetActive: (itemIndex: number, item: any) => void;
   onUpdateItem: (index: number, originalItem: any, text: string) => void;
   onSelectCustomMark: (id: string) => void;
   onUpdateCustomMark: (id: string, patch: Partial<CustomMark>) => void;
   onAddStroke: (stroke: DrawingStroke) => void;
+  onAddTextMark: (mark: CustomMark) => void;
+  onEraseItem: (index: number, item: any) => void;
+  onRemoveCustomMark: (id: string) => void;
 }
 
 function PDFPage({
   pdfDoc, pageNumber, pageIndex,
   edits, activeEdit,
   customMarks, activeCustomMark,
-  strokes, activeTool, penColor, highlightColor,
+  strokes, activeTool, penColor, highlightColor, textColor, textFontSize,
   onSetActive, onUpdateItem,
   onSelectCustomMark, onUpdateCustomMark,
-  onAddStroke,
+  onAddStroke, onAddTextMark, onEraseItem, onRemoveCustomMark,
 }: PDFPageProps) {
   const canvasRef        = useRef<HTMLCanvasElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -801,19 +908,37 @@ function PDFPage({
 
   // ── Drawing mouse handlers ──
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (activeTool === 'select') return;
+    if (activeTool === 'select' || activeTool === 'eraser') return;
     const dc   = drawingCanvasRef.current;
     if (!dc) return;
     const rect = dc.getBoundingClientRect();
     const cx   = e.clientX - rect.left;
     const cy   = e.clientY - rect.top;
+
+    if (activeTool === 'text') {
+      const pdfPos = canvasToPdf(cx, cy);
+      const newId = `text-mark-${Date.now()}`;
+      onAddTextMark({
+        id: newId,
+        pageIndex,
+        text: '',
+        x: pdfPos.x,
+        y: pdfPos.y,
+        fontSize: textFontSize,
+        color: textColor,
+      });
+      setEditingMarkId(newId);
+      e.preventDefault();
+      return;
+    }
+
     currentPointsRef.current = [canvasToPdf(cx, cy)];
     isDrawingRef.current = true;
     e.preventDefault();
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawingRef.current || activeTool === 'select') return;
+    if (!isDrawingRef.current || activeTool === 'select' || activeTool === 'text' || activeTool === 'eraser') return;
     const dc   = drawingCanvasRef.current;
     if (!dc) return;
     const rect = dc.getBoundingClientRect();
@@ -870,7 +995,7 @@ function PDFPage({
     window.addEventListener('mouseup', onUp);
   };
 
-  const drawingActive = activeTool !== 'select';
+  const drawingActive = activeTool === 'pen' || activeTool === 'highlight' || activeTool === 'text';
 
   return (
     <div
@@ -885,7 +1010,7 @@ function PDFPage({
         ref={drawingCanvasRef}
         className="absolute inset-0"
         style={{
-          cursor: drawingActive ? 'crosshair' : 'default',
+          cursor: activeTool === 'text' ? 'text' : drawingActive ? 'crosshair' : 'default',
           pointerEvents: drawingActive ? 'all' : 'none',
           zIndex: 50,
         }}
@@ -899,7 +1024,10 @@ function PDFPage({
       {!isRendering && viewport && (
         <div
           className="absolute inset-0 z-10 select-none overflow-hidden"
-          style={{ pointerEvents: drawingActive ? 'none' : 'auto' }}
+          style={{
+            pointerEvents: drawingActive ? 'none' : 'auto',
+            cursor: activeTool === 'eraser' ? 'cell' : 'auto',
+          }}
         >
           {textItems.map((item: any, idx) => {
             if (!item.str.trim()) return null;
@@ -927,7 +1055,11 @@ function PDFPage({
                     opacity: isActive ? 0 : 1,
                     zIndex: isEdited ? 30 : 20,
                   }}
-                  onClick={e => { e.stopPropagation(); onSetActive(idx, item); }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    if (activeTool === 'eraser') { onEraseItem(idx, item); return; }
+                    onSetActive(idx, item);
+                  }}
                 >
                   {isEdited ? displayText : ''}
                 </div>
@@ -997,13 +1129,20 @@ function PDFPage({
               <div
                 key={mark.id}
                 className={cn(
-                  'absolute select-none px-0.5 cursor-move',
+                  'absolute select-none px-0.5',
+                  activeTool === 'eraser' ? 'cursor-cell' : 'cursor-move',
                   isActive ? 'ring-1 ring-blue-400 bg-blue-50/40' : 'hover:ring-1 hover:ring-neutral-300',
                 )}
-                style={{ ...commonStyle, zIndex: 40 }}
-                onMouseDown={e => startDrag(e, mark)}
-                onDoubleClick={e => { e.stopPropagation(); onSelectCustomMark(mark.id); setEditingMarkId(mark.id); }}
-                title="Doble click para editar · Arrastrar para mover"
+                style={{ ...commonStyle, zIndex: 40, color: mark.color || '#000000' }}
+                onMouseDown={e => {
+                  if (activeTool === 'eraser') { e.stopPropagation(); onRemoveCustomMark(mark.id); return; }
+                  startDrag(e, mark);
+                }}
+                onDoubleClick={e => {
+                  if (activeTool === 'eraser') return;
+                  e.stopPropagation(); onSelectCustomMark(mark.id); setEditingMarkId(mark.id);
+                }}
+                title={activeTool === 'eraser' ? 'Click para borrar' : 'Doble click para editar · Arrastrar para mover'}
               >
                 {mark.text}
               </div>
