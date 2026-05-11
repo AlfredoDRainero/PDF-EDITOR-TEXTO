@@ -285,70 +285,7 @@ export default function App() {
     if (!file) return;
     setIsExporting(true);
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfDocOut = await PDFDocument.load(arrayBuffer);
-      const font = await pdfDocOut.embedFont(StandardFonts.Helvetica);
-      const pages = pdfDocOut.getPages();
-
-      // Highlights first (go "under" text visually via opacity)
-      for (const stroke of strokes.filter(s => s.tool === 'highlight')) {
-        const page = pages[stroke.pageIndex];
-        if (!page) continue;
-        for (let i = 1; i < stroke.points.length; i++) {
-          const p0 = stroke.points[i - 1];
-          const p1 = stroke.points[i];
-          page.drawLine({
-            start: { x: p0.x, y: p0.y },
-            end:   { x: p1.x, y: p1.y },
-            thickness: stroke.lineWidthPt,
-            color: hexToRgb(stroke.color),
-            opacity: 0.4,
-          });
-        }
-      }
-
-      // Text edits
-      for (const edit of edits) {
-        const page = pages[edit.pageIndex];
-        page.drawRectangle({
-          x: edit.x, y: edit.y - edit.fontSize * 0.15,
-          width: edit.width, height: edit.fontSize * 1.2,
-          color: rgb(1, 1, 1),
-        });
-        page.drawText(edit.newText, {
-          x: edit.x, y: edit.y,
-          size: edit.fontSize, font, color: rgb(0, 0, 0),
-        });
-      }
-
-      // Custom marks (header/footer)
-      for (const mark of customMarks) {
-        const targetPages = mark.pageIndex === -1 ? pages : [pages[mark.pageIndex]];
-        for (const p of targetPages) {
-          p.drawText(mark.text, {
-            x: mark.x, y: mark.y,
-            size: mark.fontSize, font, color: rgb(0, 0, 0),
-          });
-        }
-      }
-
-      // Pen strokes on top
-      for (const stroke of strokes.filter(s => s.tool === 'pen')) {
-        const page = pages[stroke.pageIndex];
-        if (!page) continue;
-        for (let i = 1; i < stroke.points.length; i++) {
-          const p0 = stroke.points[i - 1];
-          const p1 = stroke.points[i];
-          page.drawLine({
-            start: { x: p0.x, y: p0.y },
-            end:   { x: p1.x, y: p1.y },
-            thickness: stroke.lineWidthPt,
-            color: hexToRgb(stroke.color),
-          });
-        }
-      }
-
-      const pdfBytes = await pdfDocOut.save();
+      const pdfBytes = await buildModifiedPdfBytes();
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -363,10 +300,52 @@ export default function App() {
     }
   };
 
+  const buildModifiedPdfBytes = async (): Promise<Uint8Array> => {
+    const arrayBuffer = await file!.arrayBuffer();
+    const pdfDocOut = await PDFDocument.load(arrayBuffer);
+    const font = await pdfDocOut.embedFont(StandardFonts.Helvetica);
+    const pages = pdfDocOut.getPages();
+
+    for (const stroke of strokes.filter(s => s.tool === 'highlight')) {
+      const page = pages[stroke.pageIndex];
+      if (!page) continue;
+      for (let i = 1; i < stroke.points.length; i++) {
+        const p0 = stroke.points[i - 1];
+        const p1 = stroke.points[i];
+        page.drawLine({ start: { x: p0.x, y: p0.y }, end: { x: p1.x, y: p1.y }, thickness: stroke.lineWidthPt, color: hexToRgb(stroke.color), opacity: 0.4 });
+      }
+    }
+
+    for (const edit of edits) {
+      const page = pages[edit.pageIndex];
+      page.drawRectangle({ x: edit.x, y: edit.y - edit.fontSize * 0.15, width: edit.width, height: edit.fontSize * 1.2, color: rgb(1, 1, 1) });
+      page.drawText(edit.newText, { x: edit.x, y: edit.y, size: edit.fontSize, font, color: rgb(0, 0, 0) });
+    }
+
+    for (const mark of customMarks) {
+      const targetPages = mark.pageIndex === -1 ? pages : [pages[mark.pageIndex]];
+      for (const p of targetPages) {
+        p.drawText(mark.text, { x: mark.x, y: mark.y, size: mark.fontSize, font, color: rgb(0, 0, 0) });
+      }
+    }
+
+    for (const stroke of strokes.filter(s => s.tool === 'pen')) {
+      const page = pages[stroke.pageIndex];
+      if (!page) continue;
+      for (let i = 1; i < stroke.points.length; i++) {
+        const p0 = stroke.points[i - 1];
+        const p1 = stroke.points[i];
+        page.drawLine({ start: { x: p0.x, y: p0.y }, end: { x: p1.x, y: p1.y }, thickness: stroke.lineWidthPt, color: hexToRgb(stroke.color) });
+      }
+    }
+
+    return pdfDocOut.save();
+  };
+
   const handlePrint = async () => {
     if (!file) return;
-    const arrayBuffer = await file.arrayBuffer();
-    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+    const pdfBytes = await buildModifiedPdfBytes();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const win = window.open(url, '_blank');
     if (win) win.addEventListener('load', () => win.print());
