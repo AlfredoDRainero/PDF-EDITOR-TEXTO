@@ -81,9 +81,9 @@ export default function App() {
     event.target.value = '';
     if (!selectedFile || selectedFile.type !== 'application/pdf' || !type) return;
 
-    const resolucion = window.prompt('Ingrese el número de Resolución:', '');
+    const resolucion = window.prompt('Ingrese Resolucion:', '');
     if (resolucion === null) return;
-    const firma = window.prompt('Ingrese la Firma (nombre del firmante):', '');
+    const firma = window.prompt('Ingrese Firma:', '');
     if (firma === null) return;
 
     loadPdf(selectedFile, type, resolucion.trim(), firma.trim());
@@ -91,14 +91,6 @@ export default function App() {
 
   const fileBaseName = (name: string) =>
     name.replace(/\.pdf$/i, '');
-
-  const todayString = () => {
-    const d = new Date();
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return `${dd}/${mm}/${yyyy}`;
-  };
 
   const buildGearMarks = async (
     doc: pdfjsLib.PDFDocumentProxy,
@@ -121,7 +113,7 @@ export default function App() {
       `Firma: ${firma}`;
 
     const footerText =
-      ` ${todayString()} - Aseguramiento de la Calidad - CC : 8400 - KSU: 7.2 - Clasificacion : Interno`;
+      `Fecha del informe - Aseguramiento de la Calidad - CC : 8400 - KSU: 7.2 - Clasificacion : Interno`;
 
     // Header: baseline a 1cm del tope (descendiendo desde el borde superior)
     const headerY = pageHeightPt - CM_TO_PT - headerFontSize * 0.8;
@@ -157,9 +149,11 @@ export default function App() {
     const newEdits: TextMark[] = [];
 
     const replacements: { re: RegExp; value: string }[] = [
+      { re: /^(\s*Informe\s*No\.?\s*:\s*)\.+\s*$/i, value: informeNum },
+      { re: /^(\s*Informes?\s*No\.?\s*:\s*)\.+\s*$/i, value: informeNum },
       { re: /^(\s*Informe\s*:\s*)\.+\s*$/i, value: informeNum },
-      { re: /^(\s*Informes?\s*:\s*)\.+\s*$/i, value: informeNum },
       { re: /^(\s*Resoluci[oó]n\s*:\s*)\.+\s*$/i, value: resolucion },
+      { re: /^(\s*Firma\s*\/\s*Leg\.?\s*:\s*)\.+\s*$/i, value: firma },
       { re: /^(\s*Firma\s*:\s*)\.+\s*$/i, value: firma },
     ];
 
@@ -397,7 +391,7 @@ export default function App() {
                   <Upload size={16} />
                 </div>
                 <span className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider text-center px-2">
-                  Subir Informe Zeiss
+                  Cargar Informe Zeiss
                 </span>
               </button>
 
@@ -409,7 +403,7 @@ export default function App() {
                   <Upload size={16} />
                 </div>
                 <span className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider text-center px-2">
-                  Subir Informe Engranaje
+                  Cargar Informe Engranaje
                 </span>
               </button>
 
