@@ -410,7 +410,7 @@ export default function App() {
             <div className="w-4 h-0.5 bg-white" />
             <div className="w-4 h-0.5 bg-white" />
           </div>
-          <h1 className="font-bold text-xs uppercase tracking-[0.2em]">TypeFlow Editor v2.4</h1>
+          <h1 className="font-bold text-xs uppercase tracking-[0.2em]">Editor Informes Metrología</h1>
         </div>
 
         <div className="flex items-center gap-3">
@@ -995,7 +995,7 @@ function PDFPage({
     window.addEventListener('mouseup', onUp);
   };
 
-  const drawingActive = activeTool === 'pen' || activeTool === 'highlight' || activeTool === 'text';
+  const drawingActive = (activeTool === 'pen' || activeTool === 'highlight' || activeTool === 'text') && !editingMarkId;
 
   return (
     <div
@@ -1115,6 +1115,8 @@ function PDFPage({
                     minWidth: '300px',
                     width: `${Math.max(mark.text.length * fontSizePx * 0.55, 300)}px`,
                     height: `${fontSizePx * 1.4}px`,
+                    zIndex: 100,
+                    color: mark.color || '#000000',
                   }}
                   onBlur={e => { onUpdateCustomMark(mark.id, { text: e.target.value }); setEditingMarkId(null); }}
                   onKeyDown={e => {
@@ -1133,7 +1135,7 @@ function PDFPage({
                   activeTool === 'eraser' ? 'cursor-cell' : 'cursor-move',
                   isActive ? 'ring-1 ring-blue-400 bg-blue-50/40' : 'hover:ring-1 hover:ring-neutral-300',
                 )}
-                style={{ ...commonStyle, zIndex: 40, color: mark.color || '#000000' }}
+                style={{ ...commonStyle, zIndex: 60, color: mark.color || '#000000' }}
                 onMouseDown={e => {
                   if (activeTool === 'eraser') { e.stopPropagation(); onRemoveCustomMark(mark.id); return; }
                   startDrag(e, mark);
