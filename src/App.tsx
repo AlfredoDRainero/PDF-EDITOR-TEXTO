@@ -391,7 +391,7 @@ export default function App() {
                   <Upload size={16} />
                 </div>
                 <span className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider text-center px-2">
-                  Subir Informe Zeiss
+                  Cargar Informe Zeiss
                 </span>
               </button>
 
@@ -403,7 +403,7 @@ export default function App() {
                   <Upload size={16} />
                 </div>
                 <span className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider text-center px-2">
-                  Subir Informe Engranaje
+                  Cargar Informe Engranaje
                 </span>
               </button>
 
